@@ -26,7 +26,6 @@ os.environ['TOKENIZERS_PARALLELISM']='true'
 @hydra.main(version_base=None, config_path='./configs/train/single_task', config_name='reach_target')
 def main(cfg: DictConfig) -> None:
     output_dir = HydraConfig.get().run.dir
-    # input(cfg)
 
     logging.getLogger('sentence_transformers.SentenceTransformer').setLevel(logging.ERROR)
     language_encoder = sentence_transformers.SentenceTransformer('bert-base-nli-mean-tokens', cache_folder='cache', device=cfg.train.device)
@@ -38,8 +37,7 @@ def main(cfg: DictConfig) -> None:
     train_dataloader_iter = iter(train_dataloader)
     model = hydra.utils.instantiate(cfg.model)
     optimizer = hydra.utils.instantiate(cfg.optimizer, params=model.parameters())
-
-    # configure logging
+    
     wandb.login()
     run = wandb.init(
         dir=output_dir,
@@ -62,11 +60,6 @@ def main(cfg: DictConfig) -> None:
         images = {view: frames.to(cfg.train.device) for view, frames in images.items()}
         task_embed = task_embed.to(cfg.train.device)
         action = xyz.to(cfg.train.device), axangle.to(cfg.train.device), gripper.to(cfg.train.device)
-
-        # if step == 1:
-        #     print(np.linalg.norm(xyz, axis=-1), np.linalg.norm(axangle, axis=-1), gripper)
-        #     plt.imshow(images[list(images.keys())[0]][0, 0].permute(1, 2, 0).cpu().numpy())
-        #     plt.show()
 
         optimizer.zero_grad()
         pred_action = model.forward(images, task_embed)
